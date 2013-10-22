@@ -62,7 +62,7 @@ SpiceStream* sf_rdhdr_s3raw(char *name, FILE *fp)
 	int lineno = 0;
 	int linesize = 1024;
 	char *key, *val;
-	int nvars = 0, npoints;
+	int nvars = 0, npoints = 0;
 	int got_nvars = 0;
 	int got_values = 0;
 	int dtype_complex = 0;
