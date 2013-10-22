@@ -20,10 +20,10 @@
  */
 
 /* try to arrange to be able ue fopen64 and off64_t inside the spicestream
- * library only.  
+ * library only.
  * None of spicestream's API is sensitive to whether or not we
  * have large file support.
- * 
+ *
  * In particular, gwave (and guile) are ignorant of all this.  No telling if
  * guile on a particular system has large file issues.
  * this is why we don't use autoconf's AC_SYS_LARGEFILE.
@@ -40,4 +40,3 @@
 /* wish there was a way to portably printf either a 64-bit or 32-bit off_t
  * without cluttering the rest of the source with #ifdefs.
  */
-

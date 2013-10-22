@@ -32,26 +32,27 @@ typedef struct _WaveVar WaveVar;
 typedef struct _WDataSet WDataSet;
 typedef struct _WvTable WvTable;
 
-/* Wave Data Set - 
+/* Wave Data Set -
  * an array of double-precision floating-point values,  used to store a
  * column of values.  Organized as a block structure because we don't know
  * how many entries there will be without reading the file, and we don't
  * want to read the whole thing twice.
- * 
- * Depending on what the memory allocator does, this might even 
+ *
+ * Depending on what the memory allocator does, this might even
  * end up being relatively cache-friendly.  TODO: think more about this.
- */ 
+ */
 
 #define DS_DBLKSIZE	8192
 #define DS_INBLKS	1024
 #define ds_blockno(n) ((n) / DS_DBLKSIZE)
 #define ds_offset(n) ((n) % DS_DBLKSIZE)
 
-struct _WDataSet {
+struct _WDataSet
+{
 	double min;
 	double max;
-	
-	/* remaining stuff is an array storage structure 
+
+	/* remaining stuff is an array storage structure
 	 * that could be abstracted out and/or replaced with somthing else */
 	/* pointer to array of pointers to blocks of doubles */
 	double **bptr;
@@ -62,7 +63,8 @@ struct _WDataSet {
 
 /* Wave Variable - used for independent or dependent variable.
  */
-struct _WaveVar {
+struct _WaveVar
+{
 	SpiceVar *sv;
 	WvTable *wtable;  /* backpointer to file */
 	WDataSet *wds;	/* data for one or more columns */
@@ -82,7 +84,8 @@ struct _WaveVar {
  * Wave Table - association of one or more dependent variables with
  *	a contiguous, nondecreasing independent variable.
  */
-struct _WvTable {
+struct _WvTable
+{
 	WaveFile *wf;
 	int swindex;	/* index of the sweep, 0-based */
 	char *name;	/* name of the sweep, if any, else NULL */
@@ -97,7 +100,8 @@ struct _WvTable {
 /*
  * WaveFile - data struture containing all of the data from a file.
  */
-struct _WaveFile {
+struct _WaveFile
+{
 	SpiceStream *ss;
 	GPtrArray *tables;  /* array of WvTable* */
 	void *udata;

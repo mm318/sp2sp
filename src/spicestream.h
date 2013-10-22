@@ -1,4 +1,4 @@
-/* 
+/*
  * spicefile.h - definitions for a file reader for the analog
  * output files of various spice-like simulators.
  *
@@ -9,18 +9,19 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif 
+#endif
 
 typedef struct _SpiceStream SpiceStream;
 typedef struct _SpiceVar SpiceVar;
 
 
-typedef enum {
-	UNKNOWN = 0,
-	TIME = 1,
-	VOLTAGE = 2,
-	CURRENT = 3,
-	FREQUENCY = 4,
+typedef enum
+{
+    UNKNOWN = 0,
+    TIME = 1,
+    VOLTAGE = 2,
+    CURRENT = 3,
+    FREQUENCY = 4,
 } VarType;
 
 typedef enum SSMsgLevel_tag {DBG = -1, INFO = 0, WARN = 1, ERR = 2} SSMsgLevel;
@@ -32,17 +33,19 @@ extern SSMsgLevel spicestream_msg_level;
 /* header data on each variable mentioned in the file
  * For sweep parameters, ncols will be 0.
  */
-struct _SpiceVar {
+struct _SpiceVar
+{
 	char *name;
 	VarType type;
 	int col;    /* index of (first) column of data that goes with this variable */
 	int ncols;  /* number of columns of data for this variable; complex numbers have two */
-};	
+};
 
 typedef int (*SSReadRow) (SpiceStream *sf, double *ivar, double *dvars);
 typedef int (*SSReadSweep) (SpiceStream *sf, double *spar);
 
-struct _SpiceStream {
+struct _SpiceStream
+{
 	char *filename;
 	int filetype;
 	int ndv;	/* number of dependent variables */
@@ -104,5 +107,5 @@ extern char *ss_filetype_name(int n);
 
 
 #ifdef __cplusplus
-	   }
-#endif 
+}
+#endif

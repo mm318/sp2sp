@@ -42,7 +42,8 @@ regexp_compile(char *str)
 
 	creg = g_new(regex_t, 1);
 	err = regcomp(creg, str, REG_NOSUB|REG_EXTENDED);
-	if(err) {
+	if(err)
+	{
 		regerror(err, creg, ebuf, sizeof(ebuf));
 		fprintf(stderr, "internal error (in regexp %s):\n", str);
 		fprintf(stderr, "  %s\n", ebuf);
@@ -51,7 +52,7 @@ regexp_compile(char *str)
 	return creg;
 }
 
-#else		
+#else
 #include "regexp.h"	/* Henry Spencer's V8 regexp */
 #define REGEXP_T regexp
 #define regexp_test(c,s) regexec((c), (s))
@@ -66,7 +67,8 @@ void wf_free_dataset(WDataSet *ds);
 WvTable *wvtable_new(WaveFile *wf);
 void wt_free(WvTable *wt);
 
-typedef struct {
+typedef struct
+{
 	char *name;
 	char *fnrexp;
 	REGEXP_T *creg;/* compiled form of regexp */
@@ -75,10 +77,11 @@ typedef struct {
 /* table associating file typenames with filename regexps.
  * Typenames should be those supported by spicefile.c.
  *
- * Filename patterns are full egrep-style 
+ * Filename patterns are full egrep-style
  * regular expressions, NOT shell-style globs.
  */
-static DFormat format_tab[] = {
+static DFormat format_tab[] =
+{
 	{"hspice", "\\.(tr|sw|ac)[0-9]$" },
 	{"cazm", "\\.[BNW]$" },
 	{"spice3raw", "\\.raw$" },
@@ -94,7 +97,7 @@ static const int NFormats = sizeof(format_tab)/sizeof(DFormat);
  *  If format not specified, tries to guess based on filename, and if
  *  that fails, tries all of the readers until one sucedes.
  *  Returns NULL on failure after printing an error message.
- * 
+ *
  * TODO: use some kind of callback or exception so that client
  * can put the error messages in a GUI or somthing.
  */
@@ -108,30 +111,36 @@ WaveFile *wf_read(char *name, char *format)
 
 	g_assert(NFormats <= 8*sizeof(tried));
 	fp = fopen64(name, "r");
-	if(fp == NULL) {
+	if(fp == NULL)
+	{
 		perror(name);
 		return NULL;
 	}
 
-	if(format == NULL) {
-		for(i = 0; i < NFormats; i++) {
-			if(!format_tab[i].creg) {
+	if(format == NULL)
+	{
+		for(i = 0; i < NFormats; i++)
+		{
+			if(!format_tab[i].creg)
+			{
 				format_tab[i].creg = regexp_compile(format_tab[i].fnrexp);
 			}
 			if(regexp_test(format_tab[i].creg, name))
 			{
 				tried |= 1<<i;
 				ss = ss_open_internal(fp, name, format_tab[i].name);
-				if(ss) {
+				if(ss)
+				{
 					ss_msg(INFO, "wf_read", "%s: read with format \"%s\"", name, format_tab[i].name);
 					return wf_finish_read(ss);
 				}
 
-				if(fseek(fp, 0L, SEEK_SET) < 0) {
+				if(fseek(fp, 0L, SEEK_SET) < 0)
+				{
 					perror(name);
 					return NULL;
 				}
-					
+
 			}
 		}
 		if(tried == 0)
@@ -139,13 +148,16 @@ WaveFile *wf_read(char *name, char *format)
 		/* no success with formats whose regexp matched filename,
 		* try the others.
 		*/
-		for(i = 0; i < NFormats; i++) {
-			if((tried & (1<<i)) == 0) {
+		for(i = 0; i < NFormats; i++)
+		{
+			if((tried & (1<<i)) == 0)
+			{
 				ss = ss_open_internal(fp, name, format_tab[i].name);
 				if(ss)
 					return wf_finish_read(ss);
 				tried |= 1<<i;
-				if(fseek(fp, 0L, SEEK_SET) < 0) {
+				if(fseek(fp, 0L, SEEK_SET) < 0)
+				{
 					perror(name);
 					return NULL;
 				}
@@ -153,7 +165,9 @@ WaveFile *wf_read(char *name, char *format)
 		}
 		ss_msg(ERR, "wf_read", "%s: couldn't read with any format\n", name);
 		return NULL;
-	} else { /* use specified format only */
+	}
+	else     /* use specified format only */
+	{
 		ss = ss_open_internal(fp, name, format);
 		if(ss)
 			return wf_finish_read(ss);
@@ -162,7 +176,7 @@ WaveFile *wf_read(char *name, char *format)
 	}
 }
 
-/* 
+/*
  * read all of the data from a SpiceStream and store it in the WaveFile
  * structure.
  */
@@ -181,30 +195,39 @@ WaveFile *wf_finish_read(SpiceStream *ss)
 	dvals = g_new(double, ss->ncols);
 
 	state = 0;
-	do {
+	do
+	{
 		wt = wf_read_table(ss, wf, &state, &ival, dvals);
-		if(wt) {
+		if(wt)
+		{
 			ss_msg(DBG, "wf_finish_read", "table with %d rows; state=%d", wt->nvalues, state);
 			wt->swindex = wf->wf_ntables;
 			g_ptr_array_add(wf->tables, wt);
-			if(!wt->name) {
+			if(!wt->name)
+			{
 				char tmp[128];
 				sprintf(tmp, "tbl%d", wf->wf_ntables);
 				wt->name = g_strdup(tmp);
 			}
-		} else {
+		}
+		else
+		{
 			ss_msg(DBG, "wf_finish_read", "NULL table; state=%d", state);
 		}
-	} while(state > 0);
+	}
+	while(state > 0);
 
 	g_free(dvals);
 	g_free(spar);
 	ss_close(ss);
 
-	if(state < 0) {
+	if(state < 0)
+	{
 		wf_free(wf);
 		return NULL;
-	} else {
+	}
+	else
+	{
 		return wf;
 	}
 }
@@ -227,7 +250,7 @@ WaveFile *wf_finish_read(SpiceStream *ss)
  */
 WvTable *
 wf_read_table(SpiceStream *ss, WaveFile *wf,
-	      int *statep, double *ivalp, double *dvals)
+              int *statep, double *ivalp, double *dvals)
 {
 	WvTable *wt;
 	int row;
@@ -236,81 +259,102 @@ wf_read_table(SpiceStream *ss, WaveFile *wf,
 	double spar;
 	int rc, i, j;
 
-	if(ss->nsweepparam > 0) {		
-		if(ss->nsweepparam == 1) {
-			if(ss_readsweep(ss, &spar) <= 0) {
+	if(ss->nsweepparam > 0)
+	{
+		if(ss->nsweepparam == 1)
+		{
+			if(ss_readsweep(ss, &spar) <= 0)
+			{
 				*statep = -1;
 				return NULL;
 			}
-		} else {
+		}
+		else
+		{
 			ss_msg(ERR, "wf_read_table", "nsweepparam=%d; multidimentional sweeps not supported\n", ss->nsweepparam);
 			*statep = -1;
 			return NULL;
 		}
 	}
 	wt = wvtable_new(wf);
-	if(ss->nsweepparam == 1) {	
+	if(ss->nsweepparam == 1)
+	{
 		wt->swval = spar;
 		wt->name = g_strdup(ss->spar[0].name);
-	} else {
+	}
+	else
+	{
 		wt->swval = 0;
 	}
-	
-	if(*statep == 2) {
+
+	if(*statep == 2)
+	{
 		wf_set_point(wt->iv->wds, row, *ivalp);
-		for(i = 0; i < wt->wt_ndv; i++) {
+		for(i = 0; i < wt->wt_ndv; i++)
+		{
 			dv = &wt->dv[i];
 			for(j = 0; j < dv->wv_ncols; j++)
 				wf_set_point(&dv->wds[j], row,
-					     dvals[dv->sv->col - 1 + j ]);
+				             dvals[dv->sv->col - 1 + j ]);
 		}
 		row = 1;
 		wt->nvalues = 1;
 		last_ival = *ivalp;
-	} else {
+	}
+	else
+	{
 		row = 0;
 		wt->nvalues = 0;
 		last_ival = -1.0e29;
 	}
 
-	while((rc = ss_readrow(ss, ivalp, dvals)) > 0) {
-		if(row > 0 && *ivalp < last_ival) {
-			if(row == 1) {
+	while((rc = ss_readrow(ss, ivalp, dvals)) > 0)
+	{
+		if(row > 0 && *ivalp < last_ival)
+		{
+			if(row == 1)
+			{
 				ss_msg(ERR, "wavefile_read", "independent variable is not nondecreasing at row %d; ival=%g last_ival=%g\n", row, *ivalp, last_ival);
 				wt_free(wt);
 				*statep = -1;
 				return NULL;
-				
-			} else {
+
+			}
+			else
+			{
 				*statep = 2;
 				return wt;
 			}
 		}
 		last_ival = *ivalp;
 		wf_set_point(wt->iv->wds, row, *ivalp);
-		for(i = 0; i < wt->wt_ndv; i++) {
+		for(i = 0; i < wt->wt_ndv; i++)
+		{
 			dv = &wt->dv[i];
 			for(j = 0; j < dv->wv_ncols; j++)
 				wf_set_point(&dv->wds[j], row,
-					     dvals[dv->sv->col - 1 + j ]);
+				             dvals[dv->sv->col - 1 + j ]);
 		}
 		row++;
 		wt->nvalues++;
 	}
 	if(rc == -2)
 		*statep = 1;
-	else if(rc < 0) {
+	else if(rc < 0)
+	{
 		wt_free(wt);
 		*statep = -1;
 		return NULL;
-	} else {
+	}
+	else
+	{
 		*statep = 0;
 	}
 	return wt;
 }
 
 
-/* 
+/*
  * Free all memory used by a WaveFile
  */
 void
@@ -318,7 +362,8 @@ wf_free(WaveFile *wf)
 {
 	int i;
 	WvTable *wt;
-	for(i = 0; i < wf->tables->len; i++) {
+	for(i = 0; i < wf->tables->len; i++)
+	{
 		wt = wf_wtable(wf, i);
 		wt_free(wt);
 	}
@@ -359,7 +404,8 @@ wvtable_new(WaveFile *wf)
 	wf_init_dataset(wt->iv->wds);
 
 	wt->dv = g_new0(WaveVar, wf->ss->ndv);
-	for(i = 0; i < wf->wf_ndv; i++) {
+	for(i = 0; i < wf->wf_ndv; i++)
+	{
 		wt->dv[i].wtable = wt;
 		wt->dv[i].sv = &ss->dvar[i];
 		wt->dv[i].wds = g_new0(WDataSet, wt->dv[i].sv->ncols);
@@ -371,14 +417,14 @@ wvtable_new(WaveFile *wf)
 
 
 /*
- * initialize common elements of WDataSet structure 
- */ 
+ * initialize common elements of WDataSet structure
+ */
 void
 wf_init_dataset(WDataSet *ds)
 {
 	ds->min = G_MAXDOUBLE;
 	ds->max = -G_MAXDOUBLE;
-	
+
 	ds->bpsize = DS_INBLKS;
 	ds->bptr = g_new0(double *, ds->bpsize);
 	ds->bptr[0] = g_new(double, DS_DBLKSIZE);
@@ -410,10 +456,12 @@ wf_foreach_wavevar(WaveFile *wf, GFunc func, gpointer *p)
 	WvTable *wt;
 	WaveVar *wv;
 	int i, j;
-	
-	for(i = 0; i < wf->wf_ntables; i++) {
+
+	for(i = 0; i < wf->wf_ntables; i++)
+	{
 		wt = wf_wtable(wf, i);
-		for(j = 0; j < wf->wf_ndv; j++) {
+		for(j = 0; j < wf->wf_ndv; j++)
+		{
 			wv = &wt->dv[j];
 			(func)(wv, p);
 		}
@@ -426,7 +474,8 @@ wf_foreach_wavevar(WaveFile *wf, GFunc func, gpointer *p)
 void
 wf_expand_dset(WDataSet *ds)
 {
-	if(ds->bpused >= ds->bpsize) {
+	if(ds->bpused >= ds->bpsize)
+	{
 		ds->bpsize *= 2;
 		ds->bptr = g_realloc(ds->bptr, ds->bpsize * sizeof(double*));
 		ds->nreallocs++;
@@ -469,14 +518,14 @@ wds_get_point(WDataSet *ds, int n)
 }
 
 /*
- * Use a binary search to return the index of the point 
- * whose value is the largest not greater than ival.  
+ * Use a binary search to return the index of the point
+ * whose value is the largest not greater than ival.
  * if ival is equal or greater than the max value of the
  * independent variable, return the index of the last point.
  *
  * Only works on independent-variables, which we require to
  * be nondecreasing and have only a single column.
- * 
+ *
  * Further, if there are duplicate values, returns the highest index
  * that has the same value.
  */
@@ -492,9 +541,10 @@ wf_find_point(WaveVar *iv, double ival)
 	b = iv->wv_nvalues - 1;
 	if(ival >= ds->max)
 		return b;
-	while(a+1 < b) {
+	while(a+1 < b)
+	{
 		cval = wds_get_point(ds, (a+b)/2);
-/*		printf(" a=%d b=%d ival=%g cval=%g\n", a,b,ival,cval); */
+		/*		printf(" a=%d b=%d ival=%g cval=%g\n", a,b,ival,cval); */
 		if(ival < cval)
 			b = (a+b)/2;
 		else
@@ -510,7 +560,7 @@ wf_find_point(WaveVar *iv, double ival)
  * return the value of the dependent variable dv at the point where
  * its associated independent variable has the value ival.
  *
- * FIXME:tell 
+ * FIXME:tell
  * make this fill in an array of dependent values,
  * one for each column in the specified dependent variable.
  * This will be better than making the client call us once for each column,
@@ -528,22 +578,24 @@ wv_interp_value(WaveVar *dv, double ival)
 
 	iv = dv->wv_iv;
 
-   	li = wf_find_point(iv, ival);
+	li = wf_find_point(iv, ival);
 	ri = li + 1;
 	if(ri >= dv->wv_nvalues)
 		return wds_get_point(dv->wds, dv->wv_nvalues-1);
 
 	lx = wds_get_point(&iv->wds[0], li);
 	rx = wds_get_point(&iv->wds[0], ri);
-/*	g_assert(lx <= ival); */
-	if(li > 0 && lx > ival) {
+	/*	g_assert(lx <= ival); */
+	if(li > 0 && lx > ival)
+	{
 		fprintf(stderr, "wv_interp_value: assertion failed: lx <= ival for %s: ival=%g li=%d lx=%g\n", dv->wv_name, ival, li, lx);
 	}
 
 	ly = wds_get_point(&dv->wds[0], li);
 	ry = wds_get_point(&dv->wds[0], ri);
 
-	if(ival > rx) { /* no extrapolation allowed! */
+	if(ival > rx)   /* no extrapolation allowed! */
+	{
 		return ry;
 	}
 
@@ -561,7 +613,8 @@ wf_find_variable(WaveFile *wf, char *varname, int swpno)
 	if(swpno >= wf->wf_ntables)
 		return NULL;
 
-	for(i = 0; i < wf->wf_ndv; i++) {
+	for(i = 0; i < wf->wf_ndv; i++)
+	{
 		wt = wf_wtable(wf, swpno);
 		if(0==strcmp(wt->dv[i].wv_name, varname))
 			return &wt->dv[i];

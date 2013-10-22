@@ -47,12 +47,14 @@ SSMsgLevel spicestream_msg_level = WARN;
 
 typedef SpiceStream* (*PFD)(char *name, FILE *fp);
 
-typedef struct {
+typedef struct
+{
 	char *name;
 	PFD rdfunc;
 } DFormat;
 
-static DFormat format_tab[] = {
+static DFormat format_tab[] =
+{
 	{"hspice", sf_rdhdr_hspice },
 	{"hsascii", sf_rdhdr_hsascii },
 	{"hsbinary", sf_rdhdr_hsbin },
@@ -65,7 +67,7 @@ static DFormat format_tab[] = {
 static const int NFormats = sizeof(format_tab)/sizeof(DFormat);
 
 /*
- * Open spice waveform file for reading.  
+ * Open spice waveform file for reading.
  * Reads in header with signal names (and sometimes signal types).
  * TODO: simple strategies for trying to deduce file type from
  * name or contents.
@@ -77,13 +79,18 @@ ss_open_internal(FILE *fp, char *filename, char *format)
 	SpiceStream *ss;
 	int i;
 
-	for(i = 0; i < NFormats; i++) {
-		if(0==strcmp(format, format_tab[i].name)) {
+	for(i = 0; i < NFormats; i++)
+	{
+		if(0==strcmp(format, format_tab[i].name))
+		{
 			ss = (format_tab[i].rdfunc)(filename, fp);
-			if(ss) {
+			if(ss)
+			{
 				ss->filetype = i;
 				return ss;
-			} else {
+			}
+			else
+			{
 				ss_msg(DBG, "ss_open", "failed to open %s using format %s", filename, format_tab[i].name);
 				return NULL;
 			}
@@ -99,7 +106,8 @@ ss_open(char *filename, char *format)
 	FILE *fp;
 
 	fp = fopen64(filename, "r");
-	if(fp == NULL) {
+	if(fp == NULL)
+	{
 		fprintf(stderr, "fopen(\"%s\"): %s\n", filename, strerror(errno));
 		return NULL;
 	}
@@ -172,14 +180,15 @@ void ss_delete(SpiceStream *ss)
 /*
  * row-reading function that always returns EOF.
  */
-static int 
+static int
 ss_readrow_none(SpiceStream *ss, double *ivar, double *dvars)
 {
 	return 0;
 }
 
 
-static char *vartype_names[] = {
+static char *vartype_names[] =
+{
 	"Unknown", "Time", "Voltage", "Current", "Frequency"
 };
 const int nvartype_names = sizeof(vartype_names)/sizeof(char *);
@@ -194,7 +203,8 @@ char *vartype_name_str(VarType type)
 	static char buf[32];
 	if(type < nvartype_names)
 		return vartype_names[type];
-	else {
+	else
+	{
 		sprintf(buf, "type-%d", type);
 		return buf;
 	}
@@ -210,7 +220,8 @@ char *ss_var_name(SpiceVar *sv, int col, char *buf, int n)
 {
 	int idx;
 
-	if(buf == NULL) {
+	if(buf == NULL)
+	{
 		int l;
 		l = strlen(sv->name + 3);
 		buf = g_new(char, l);
@@ -220,20 +231,21 @@ char *ss_var_name(SpiceVar *sv, int col, char *buf, int n)
 	n -= strlen(buf)+1;
 	if(sv->ncols == 1 || col < 0)
 		return buf;
-	if(n>1) {
+	if(n>1)
+	{
 		idx = strlen(buf);
 		buf[idx++] = '.';
 		buf[idx++] = '0'+col;
 		buf[idx] = 0;
 	}
-	
+
 	return(buf);
 }
 
 /*
- * given a filetype number, return a pointer to a string containing the 
+ * given a filetype number, return a pointer to a string containing the
  * name of the Spicestream file format.
- * Valid file type numbers start at 0. 
+ * Valid file type numbers start at 0.
  */
 char *ss_filetype_name(int n)
 {
@@ -254,14 +266,17 @@ fread_line(FILE *fp, char **bufp, int *bufsize)
 {
 	int c;
 	int n = 0;
-	if(*bufp == NULL) {
+	if(*bufp == NULL)
+	{
 		if(*bufsize == 0)
 			*bufsize = 1024;
 		*bufp = g_new(char, *bufsize);
 	}
-	while(((c = getc(fp)) != EOF) && c != '\n') {
+	while(((c = getc(fp)) != EOF) && c != '\n')
+	{
 		(*bufp)[n++] = c;
-		if(n >= *bufsize) {
+		if(n >= *bufsize)
+		{
 			*bufsize *= 2;
 			*bufp = g_realloc(*bufp, *bufsize);
 		}
@@ -276,7 +291,7 @@ fread_line(FILE *fp, char **bufp, int *bufsize)
 FILE *ss_error_file;
 SSMsgHook ss_error_hook;
 
-/* 
+/*
  * ss_msg: emit an error message from anything in the spicestream subsystem,
  * or anything else that wants to use our routines.
  *
@@ -285,7 +300,7 @@ SSMsgHook ss_error_hook;
  * if ss_error_file is non-NULL, it is a FILE* to write the message to.
  * If neither of these are non-null, the message is written to stderr.
  *
- * args: 
+ * args:
  *   type is one of:
  *	 DBG - Debug, ERR - ERROR, INFO - infomration, WARN - warning
  *       id is the name of the function, or other identifier
@@ -302,7 +317,8 @@ ss_msg(SSMsgLevel type, const char *id, const char *msg, ...)
 	if(type < spicestream_msg_level)
 		return;
 
-	switch (type) {
+	switch (type)
+	{
 	case DBG:
 		typestr = "<<DEBUG>>";
 		break;
@@ -339,6 +355,6 @@ ss_msg(SSMsgLevel type, const char *id, const char *msg, ...)
 		fputs(buf, ss_error_file);
 	if(ss_error_hook == NULL && ss_error_file == NULL)
 		fputs(buf, stderr);
-	
+
 	va_end(args);
 }

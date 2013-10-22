@@ -35,13 +35,14 @@
 static int sf_readrow_nsout(SpiceStream *sf, double *ivar, double *dvars);
 static char *msgid = "nsout";
 
-struct nsvar {
+struct nsvar
+{
 	char *name;
 	int index;
 	VarType type;
 };
 
-/* convert variable type string from out-file to 
+/* convert variable type string from out-file to
  * our type numbers
  */
 static VarType
@@ -73,95 +74,112 @@ sf_rdhdr_nsout(char *name, FILE *fp)
 	struct nsvar *nsv;
 	int i;
 	int maxindex = 0;
-	
-	while(fread_line(fp, &line, &linesize) != EOF) {
+
+	while(fread_line(fp, &line, &linesize) != EOF)
+	{
 		lineno++;
-		if(lineno == 1 && strncmp(line, ";! output_format", 16)) {
+		if(lineno == 1 && strncmp(line, ";! output_format", 16))
+		{
 			/* not an out file; bail out */
 			ss_msg(DBG, msgid, "%s:%d: Doesn't look like an ns-out file; \"output_format\" expected\n", name, lineno);
-			
+
 			return NULL;
 		}
 		if(line[0] == ';')
 			continue;
 
-		if(line[0] == '.') {
+		if(line[0] == '.')
+		{
 			key = strtok(&line[1], " \t");
-			if(!key) {
+			if(!key)
+			{
 				ss_msg(ERR, msgid, "%s:%d: syntax error, expected \"keyword:\"", name, lineno);
 				g_free(line);
 				return NULL;
 			}
-			if(strcmp(key, "time_resolution") == 0) {
+			if(strcmp(key, "time_resolution") == 0)
+			{
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected number", name, lineno);
 					g_free(line);
 					return NULL;
 				}
 				time_resolution = atof(val);
 			}
-			if(strcmp(key, "current_resolution") == 0) {
+			if(strcmp(key, "current_resolution") == 0)
+			{
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected number", name, lineno);
 					g_free(line);
 					return NULL;
 				}
 				current_resolution = atof(val);
 			}
-			if(strcmp(key, "voltage_resolution") == 0) {
+			if(strcmp(key, "voltage_resolution") == 0)
+			{
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected number", name, lineno);
 					g_free(line);
 					return NULL;
 				}
 				voltage_resolution = atof(val);
 			}
-			if(strcmp(key, "index") == 0) {
+			if(strcmp(key, "index") == 0)
+			{
 				nsv = g_new0(struct nsvar, 1);
 
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected varname", name, lineno);
 					goto err;
 				}
 				nsv->name = g_strdup(val);
 
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected var-index", name, lineno);
 					goto err;
 				}
 				nsv->index = atoi(val);
 				if(nsv->index > maxindex)
 					maxindex = nsv->index;
-				
+
 				val = strtok(NULL, " \t\n");
-				if(!val) {
+				if(!val)
+				{
 					ss_msg(ERR, msgid, "%s:%d: syntax error, expected variable type", name, lineno);
 					goto err;
 				}
 				nsv->type = sf_str2type_nsout(val);
-				vlist = g_list_append(vlist, nsv);	
+				vlist = g_list_append(vlist, nsv);
 			}
 		}
 
-		if(isdigit(line[0])) {
+		if(isdigit(line[0]))
+		{
 			got_ivline = 1;
 			break;
 		}
 	}
-	if(!vlist) {
+	if(!vlist)
+	{
 		ss_msg(ERR, msgid, "%s:%d: no variable indices found in header", name, lineno);
 	}
-	if(!got_ivline) {
+	if(!got_ivline)
+	{
 		ss_msg(ERR, msgid, "%s:%d: EOF without data-line in header", name, lineno);
 		goto err;
 	}
 	ndvars = g_list_length(vlist);
-	
+
 	sf = ss_new(fp, name, ndvars, 0);
 	sf->time_resolution = time_resolution;
 	sf->current_resolution = current_resolution;
@@ -174,8 +192,9 @@ sf_rdhdr_nsout(char *name, FILE *fp)
 	sf->ivar->name = g_strdup("TIME");
 	sf->ivar->type = TIME;
 	sf->ivar->col = 0;
-	
-	for(i = 0; i < ndvars; i++) {
+
+	for(i = 0; i < ndvars; i++)
+	{
 		nsv = g_list_nth_data(vlist, i);
 
 		sf->dvar[i].name = g_strdup(nsv->name);
@@ -196,14 +215,15 @@ sf_rdhdr_nsout(char *name, FILE *fp)
 	sf->linebuf = line;
 	sf->lbufsize = linesize;
 	ss_msg(DBG, msgid, "Done with header at offset 0x%lx", (long) ftello64(sf->fp));
-	
+
 	return sf;
 err:
 	if(line)
 		g_free(line);
-	if(sf) {
-		sf->fp = NULL;  
-		/* prevent ss_delete from cleaning up FILE*; ss_open callers 
+	if(sf)
+	{
+		sf->fp = NULL;
+		/* prevent ss_delete from cleaning up FILE*; ss_open callers
 		   may rewind and try another format on failure. */
 		ss_delete(sf);
 	}
@@ -212,7 +232,7 @@ err:
 
 /*
  * Read row of values from an out-format file
- * upon call, line buffer should always contain the 
+ * upon call, line buffer should always contain the
  * independent-variable line that starts this set of values.
  */
 static int
@@ -226,43 +246,49 @@ sf_readrow_nsout(SpiceStream *sf, double *ivar, double *dvars)
 	double scale;
 	SpiceVar *dvp;
 
-	if(feof(sf->fp)) {
+	if(feof(sf->fp))
+	{
 		return 0;
 	}
 
 	// process iv line
 	v = atof(sf->linebuf) * sf->time_resolution * 1e-9; /* ns */
 	*ivar = v;
-	
+
 	// read and process dv lines until we see another iv line
-	while(fread_line(sf->fp, &sf->linebuf, &sf->lbufsize) != EOF) {
+	while(fread_line(sf->fp, &sf->linebuf, &sf->lbufsize) != EOF)
+	{
 		sf->lineno++;
 		if(sf->linebuf[0] == ';')
 			continue;
-		
+
 		sidx = strtok(sf->linebuf, " \t");
-		if(!sidx) {
-			ss_msg(ERR, msgid, "%s:%d: expected value", 
+		if(!sidx)
+		{
+			ss_msg(ERR, msgid, "%s:%d: expected value",
 			       sf->filename, sf->lineno);
 			return -1;
 		}
 
-		sval = strtok(NULL, " \t"); 
+		sval = strtok(NULL, " \t");
 		if(!sval)
 			/* no value token: this is the ivar line for the
 			    next row */
 			break;
 
 		idx = atoi(sidx);
-		if(idx <= sf->maxindex) {
+		if(idx <= sf->maxindex)
+		{
 			sf->datrow[idx] = atof(sval);
 		}
 	}
 
-	for(i = 0; i < sf->ndv; i++) {
+	for(i = 0; i < sf->ndv; i++)
+	{
 		dvp = &sf->dvar[i];
 		scale = 1.0;
-		switch(dvp->type) {
+		switch(dvp->type)
+		{
 		case VOLTAGE:
 			scale = sf->voltage_resolution;
 			break;
@@ -275,4 +301,3 @@ sf_readrow_nsout(SpiceStream *sf, double *ivar, double *dvars)
 
 	return 1;
 }
-

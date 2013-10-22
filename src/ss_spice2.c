@@ -56,10 +56,11 @@ sf_rdhdr_s2raw(char *name, FILE *fp)
 
 	if(fread (&s2var,sizeof(s2var),1,fp) != 1)
 		return NULL;
-        if (memcmp(&s2var,SPICE_MAGIC,8)) {
+	if (memcmp(&s2var,SPICE_MAGIC,8))
+	{
 		ss_msg(DBG, msgid, "%s: not a spice2 rawfile (bad magic number)", name);
-                return NULL;
-        }
+		return NULL;
+	}
 	if(fread (&s2hdr,sizeof(s2hdr),1,fp) != 1)
 		return NULL;
 	ss_msg(DBG, msgid, "%s: nvars=%d const=%d analysis mode %d",
@@ -69,8 +70,10 @@ sf_rdhdr_s2raw(char *name, FILE *fp)
 	if(fread (&s2vname,sizeof(s2vname),1,fp) != 1)
 		return NULL;
 	s2vname.name[7] = 0;
-	if(cp = strchr(s2vname.name, ' '))
+	if((cp = strchr(s2vname.name, ' ')))
+	{
 		*cp = 0;
+	}
 
 	ndv = s2hdr.nvars - 1;
 	sf = ss_new(fp, name, ndv, 0);
@@ -80,12 +83,15 @@ sf_rdhdr_s2raw(char *name, FILE *fp)
 	sf->ivar->col = 0;
 	sf->ivar->ncols = 1;
 
-        for (i = 0; i < ndv; i++) {
+	for (i = 0; i < ndv; i++)
+	{
 		if(fread (&s2vname, sizeof(s2vname), 1, fp) != 1)
 			goto err;
 		s2vname.name[7] = 0;
-		if(cp = strchr(s2vname.name, ' '))
+		if((cp = strchr(s2vname.name, ' ')))
+		{
 			*cp = 0;
+		}
 
 		sf->dvar[i].name = g_strdup(s2vname.name);
 		sf->dvar[i].type = VOLTAGE;  /* FIXME:sgt: get correct type */
@@ -95,14 +101,16 @@ sf_rdhdr_s2raw(char *name, FILE *fp)
 
 	if(fread (&s2vtype, sizeof(s2vtype), 1, fp) != 1)
 		goto err;
-	for (i = 0; i < ndv; i++) {
+	for (i = 0; i < ndv; i++)
+	{
 		if(fread (&s2vtype, sizeof(s2vtype), 1, fp) != 1)
 			goto err;
 	}
 
 	if(fread (&s2vloc, sizeof(s2vloc), 1, fp) != 1)
 		goto err;
-	for (i = 0; i < ndv; i++) {
+	for (i = 0; i < ndv; i++)
+	{
 		if(fread (&s2vloc, sizeof(s2vloc), 1, fp) != 1)
 			goto err;
 	}
@@ -115,7 +123,8 @@ sf_rdhdr_s2raw(char *name, FILE *fp)
 	sf->readrow = sf_readrow_s2raw;
 	return sf;
 err:
-	if(sf) {
+	if(sf)
+	{
 		ss_delete(sf);
 	}
 	return NULL;
@@ -132,7 +141,8 @@ sf_readrow_s2raw(SpiceStream *sf, double *ivar, double *dvars)
 	spice_var_t val;
 
 	/* independent var */
-	if ((rc = fread (&val,sizeof(val),1, sf->fp)) != 1) {
+	if ((rc = fread (&val,sizeof(val),1, sf->fp)) != 1)
+	{
 		if(rc == 0)
 			return 0;
 		else
@@ -141,10 +151,12 @@ sf_readrow_s2raw(SpiceStream *sf, double *ivar, double *dvars)
 	if (memcmp(&val,SPICE_MAGIC,8) == 0) /* another analysis */
 		return 0;
 	*ivar = val.val;
-	
+
 	/* dependent vars */
-	for(i = 0; i < sf->ndv; i++) {
-		if(fread(&val, sizeof(val), 1, sf->fp) != 1) {
+	for(i = 0; i < sf->ndv; i++)
+	{
+		if(fread(&val, sizeof(val), 1, sf->fp) != 1)
+		{
 			ss_msg(ERR, msgid, "unexpected EOF at dvar %d", i);
 			return -1;
 		}
